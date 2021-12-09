@@ -28,11 +28,14 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output-file", default="test.txt", help="output file, decoded")
     parser.add_argument("-w", "--words-file", default="words-test.txt", help="path to file containing the words to build passphrase upon")
     parser.add_argument("-l", "--length", type=int, default=12, help="passphrase length")
+    parser.add_argument("-c", "--chunk-size", type=int, default=1000, help="print info every N combinations")
     args = parser.parse_args()
 
     with open(args.words_file) as f:
         words = f.read().split()
-        num_arrangements = math.factorial(len(words)) / math.factorial(len(words) - args.length)  # e.g. 8892185702400 for 12 among 18
+        total_arrangements = int(math.factorial(len(words)) / math.factorial(len(words) - args.length))  # e.g. 8892185702400 for 12 among 18
+        num_arrangements = args.until - args.skip if args.until else total_arrangements - args.skip
+        print(f"Selected range: {args.skip}-{args.until if args.until else total_arrangements} ({num_arrangements}/{total_arrangements})")
         i = 0
         last = time.time()
         for a in itertools.permutations(words, args.length):
@@ -41,11 +44,11 @@ if __name__ == "__main__":
                 continue
             passphrase = " ".join(a)
             if try_it(args, passphrase):
-                print(passphrase)
-                break
-            if i % 1000 == 0:
+                print(f"Passphrase may be: {passphrase}")
+                # break  # no decoding failure does not imply right passphrase, so do not break here
+            if i % args.chunk_size == 0:
                 now = time.time()
-                print(f"Current try: {i} - Progress: {i / num_arrangements:%} - Speed: {1000 / (now - last):.0f} tries/s")
+                print(f"Current try: {i} - Progress: {i / num_arrangements:%} - Speed: {args.chunk_size / (now - last):.0f} attempts/s")
                 last = now
             if args.until and i >= args.until:
                 break
