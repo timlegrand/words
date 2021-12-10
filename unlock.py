@@ -37,6 +37,7 @@ if __name__ == "__main__":
         num_arrangements = args.until - args.skip if args.until else total_arrangements - args.skip
         print(f"Selected range: {args.skip}-{args.until if args.until else total_arrangements} ({num_arrangements}/{total_arrangements})")
         i = 0
+        done = 0
         last = time.time()
         for a in itertools.permutations(words, args.length):
             i += 1
@@ -45,10 +46,11 @@ if __name__ == "__main__":
             passphrase = " ".join(a)
             if try_it(args, passphrase):
                 print(f"Passphrase may be: {passphrase}")
-                # break  # no decoding failure does not imply right passphrase, so do not break here
+            done += 1
             if i % args.chunk_size == 0:
                 now = time.time()
-                print(f"Current try: {i} - Progress: {i / num_arrangements:%} - Speed: {args.chunk_size / (now - last):.0f} attempts/s")
+                print(f"Current try: {i} - Progress: {done / num_arrangements:%} - Speed: {args.chunk_size / (now - last):.0f} attempts/s")
                 last = now
             if args.until and i >= args.until:
                 break
+        print(f"Current try: {i} - Progress: {done / num_arrangements:%}")
