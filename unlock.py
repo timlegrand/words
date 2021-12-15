@@ -6,19 +6,24 @@ import math
 import threading
 
 
-def try_it(args, passphrase):
-    cmd = [
-        "openssl", "enc", "-aes-256-cbc",
-        "-d",  # decrypt
-        "-a",  # Base64 encode/decode
-        # "-p",  # Print the iv/key when encoding
-        "-in", args.input_file,
-        "-out", args.output_file,
-        "-pass", f"pass:{passphrase}"
-        ]
+def double_check(decoded_file):
+    try:
+        with open(decoded_file, 'r', encoding='utf-8') as f:
+            f.read()
+    except UnicodeDecodeError:
+        # text is expected but got binary
+        return False
+    return True
+
+
+def try_it(args, passphrase, worker):
+    output_filename = args.output_file + str(worker)
+    cmd = ["openssl", "enc", "-aes-256-cbc", "-d", "-a", "-in", args.input_file, "-out", output_filename, "-pass", f"pass:{passphrase}"]
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
-    return not p.returncode
+    if not p.returncode:
+        return double_check(output_filename)
+    return False
 
 
 def work(worker, words, total_arrangements, until, skip, length, chunk_size):
@@ -32,7 +37,7 @@ def work(worker, words, total_arrangements, until, skip, length, chunk_size):
             if skip and i < skip + 1:
                 continue
             passphrase = " ".join(a)
-            if try_it(args, passphrase):
+            if try_it(args, passphrase, worker):
                 print(f"[#{worker}] Possible passphrase: {passphrase}")
             done += 1
             if i % chunk_size == 0:
