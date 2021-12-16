@@ -28,26 +28,26 @@ def try_it(args, passphrase, worker):
 
 
 def work(worker, words, total_arrangements, until, skip, length, chunk_size, logger):
-        num_arrangements = until - skip if until else total_arrangements - skip
-        logger.info(f"[#{worker}] Selected range: {skip}-{until if until else total_arrangements} ({num_arrangements}/{total_arrangements})")
-        i = 0
-        done = 0
-        last = time.time()
-        for a in itertools.permutations(words, length):
-            i += 1
-            if skip and i < skip + 1:
-                continue
-            passphrase = " ".join(a)
-            if try_it(args, passphrase, worker):
-                logger.warning(f"[#{worker}] Possible passphrase: {passphrase}")
-            done += 1
-            if i % chunk_size == 0:
-                now = time.time()
-                logger.info(f"[#{worker}] Current try: {i} - Progress: {done / num_arrangements:%} - Speed: {chunk_size / (now - last):.0f} attempts/s")
-                last = now
-            if until and i >= until:
-                break
-        logger.info(f"[#{worker}] Finished at {i}")
+    num_arrangements = until - skip if until else total_arrangements - skip
+    logger.info(f"[#{worker}] Selected range: {skip}-{until if until else total_arrangements} ({num_arrangements}/{total_arrangements})")
+    i = 0
+    done = 0
+    last = time.time()
+    for a in itertools.permutations(words, length):
+        i += 1
+        if skip and i < skip + 1:
+            continue
+        passphrase = " ".join(a)
+        if try_it(args, passphrase, worker):
+            logger.warning(f"[#{worker}] Possible passphrase: {passphrase}")
+        done += 1
+        if i % chunk_size == 0:
+            now = time.time()
+            logger.info(f"[#{worker}] Current try: {i} - Progress: {done / num_arrangements:%} - Speed: {chunk_size / (now - last):.0f} attempts/s")
+            last = now
+        if until and i >= until:
+            break
+    logger.info(f"[#{worker}] Finished at {i}")
 
 
 if __name__ == "__main__":
