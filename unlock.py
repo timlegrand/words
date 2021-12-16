@@ -4,6 +4,7 @@ import itertools
 import time
 import math
 import threading
+import logging
 
 
 def double_check(decoded_file):
@@ -26,9 +27,9 @@ def try_it(args, passphrase, worker):
     return False
 
 
-def work(worker, words, total_arrangements, until, skip, length, chunk_size):
+def work(worker, words, total_arrangements, until, skip, length, chunk_size, logger):
         num_arrangements = until - skip if until else total_arrangements - skip
-        print(f"[#{worker}] Selected range: {skip}-{until if until else total_arrangements} ({num_arrangements}/{total_arrangements})")
+        logger.info(f"[#{worker}] Selected range: {skip}-{until if until else total_arrangements} ({num_arrangements}/{total_arrangements})")
         i = 0
         done = 0
         last = time.time()
@@ -38,15 +39,15 @@ def work(worker, words, total_arrangements, until, skip, length, chunk_size):
                 continue
             passphrase = " ".join(a)
             if try_it(args, passphrase, worker):
-                print(f"[#{worker}] Possible passphrase: {passphrase}")
+                logger.warning(f"[#{worker}] Possible passphrase: {passphrase}")
             done += 1
             if i % chunk_size == 0:
                 now = time.time()
-                print(f"[#{worker}] Current try: {i} - Progress: {done / num_arrangements:%} - Speed: {chunk_size / (now - last):.0f} attempts/s")
+                logger.info(f"[#{worker}] Current try: {i} - Progress: {done / num_arrangements:%} - Speed: {chunk_size / (now - last):.0f} attempts/s")
                 last = now
             if until and i >= until:
                 break
-        print(f"[#{worker}] Finished at {i} - {done / num_arrangements:%}")
+        logger.info(f"[#{worker}] Finished at {i}")
 
 
 if __name__ == "__main__":
@@ -70,7 +71,12 @@ if __name__ == "__main__":
     for i in range(args.threads):
         start = int((end - args.skip) / args.threads * i + args.skip)
         until = int((end - args.skip) / args.threads * (i + 1) + args.skip)
-        threads.append(threading.Thread(target=work, args=(i, words, total_arrangements, until, start, args.length, args.chunk_size,)))
+        logger = logging.getLogger(f"{i}")
+        logger.setLevel(logging.INFO)
+        file_handler = logging.FileHandler(f"log{start}.txt")
+        file_handler.setLevel(logging.INFO)
+        logger.addHandler(file_handler)
+        threads.append(threading.Thread(target=work, args=(i, words, total_arrangements, until, start, args.length, args.chunk_size, logger, )))
         threads[i].start()
     for i in range(args.threads):
         threads[i].join()
